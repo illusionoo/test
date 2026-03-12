@@ -240,12 +240,14 @@
       <div class="controls">
         <button class="action" id="submitBtn" disabled>Submit</button>
         <button class="action" id="nextBtn" disabled>Next Question</button>
+        <button class="action" id="excludeBtn" disabled>Temporarily Exclude This Term</button>
+        <button class="action" id="clearExclusionsBtn">Clear Exclusions</button>
       </div>
 
       <div class="result" id="resultBox"></div>
 
       <div class="footer-note">
-        Tip: Questions are intentionally phrased in different ways to reduce pattern memorization.
+        Tip: Questions are intentionally phrased in different ways to reduce pattern memorization. Exclusions are stored locally in your browser, so they work on static hosting such as GitHub Pages.
       </div>
     </div>
   </div>
@@ -366,6 +368,27 @@
         { term: 'Router', fact: 'device that connects different networks' },
         { term: 'Modem', fact: 'device that modulates and demodulates signals for ISP connectivity' },
         { term: 'Firewall', fact: 'device or software that filters network traffic' }
+      ],
+
+      Printers: [
+        { symptom: 'ghosting', component: 'drum', action: 'check or replace the imaging drum' },
+        { symptom: 'toner smears on thick cardstock but not on regular paper', component: 'fuser', action: 'verify paper type and fuser temperature settings' },
+        { symptom: 'toner rubs off the page or falls off as powder', component: 'fuser', action: 'inspect or replace the fuser assembly' },
+        { symptom: 'repeated marks at regular intervals', component: 'drum', action: 'inspect the imaging drum for damage' },
+        { symptom: 'vertical black lines on printed pages', component: 'drum', action: 'inspect or replace the drum' },
+        { symptom: 'streaks or uneven print', component: 'toner cartridge', action: 'replace or reseat the toner cartridge' },
+        { symptom: 'faded print', component: 'toner cartridge', action: 'replace the toner cartridge' },
+        { symptom: 'completely blank pages', component: 'transfer roller', action: 'inspect the transfer roller and toner path' },
+        { symptom: 'paper not fusing properly', component: 'fuser', action: 'check the fuser for heat and pressure issues' },
+        { symptom: 'frequent paper jams in the paper path', component: 'pickup rollers', action: 'clean or replace the rollers' },
+        { symptom: 'multiple sheets feed at once', component: 'separation pad', action: 'inspect or replace the separation pad' },
+        { symptom: 'image appears only on part of the page', component: 'toner cartridge', action: 'check toner distribution or replace cartridge' },
+        { symptom: 'inkjet pages have missing lines or gaps', component: 'print head', action: 'clean or align the print head' },
+        { symptom: 'inkjet print is blurry or smeared', component: 'print head', action: 'clean and align the print head' },
+        { symptom: 'color output is incorrect or uneven on an inkjet printer', component: 'print head', action: 'run print head cleaning and calibration' },
+        { symptom: 'laser print has a gray background over the page', component: 'toner cartridge', action: 'replace the leaking or defective toner cartridge' },
+        { symptom: 'printer does not pick up paper', component: 'pickup rollers', action: 'clean or replace the pickup rollers' },
+        { symptom: 'paper curls excessively after printing', component: 'fuser', action: 'inspect the fuser heat setting or assembly' }
       ]
     };
 
@@ -558,6 +581,32 @@
           }
         ];
         return pick(templates);
+      },
+
+      Printers: (item) => {
+        const templates = [
+          {
+            question: `A printer shows ${item.symptom}. Which component should you check first?`,
+            answer: item.component,
+            pool: data.Printers.map(x => x.component)
+          },
+          {
+            question: `Which issue is most closely associated with the ${item.component}?`,
+            answer: item.symptom,
+            pool: data.Printers.map(x => x.symptom)
+          },
+          {
+            question: `A printer shows ${item.symptom}. What is the best next action?`,
+            answer: item.action,
+            pool: data.Printers.map(x => x.action)
+          },
+          {
+            question: `Which printer component is most likely related to this corrective action: ${item.action}?`,
+            answer: item.component,
+            pool: data.Printers.map(x => x.component)
+          }
+        ];
+        return pick(templates);
       }
     };
 
@@ -571,7 +620,8 @@
       'File Systems','File Systems',
       'Cloud',
       'Security','Security',
-      'Tools'
+      'Tools',
+      'Printers','Printers','Printers'
     ];
 
     const categories = ['All Categories', ...Object.keys(data)];
@@ -580,6 +630,8 @@
     let selectedAnswer = null;
     let currentQuestion = null;
     let locked = false;
+    const exclusionStorageKey = 'aplus-memory-trainer-exclusions';
+    let excludedTerms = loadExclusions();
 
     const categoryBar = document.getElementById('categoryBar');
     const modeLabel = document.getElementById('modeLabel');
@@ -588,7 +640,23 @@
     const answersEl = document.getElementById('answers');
     const submitBtn = document.getElementById('submitBtn');
     const nextBtn = document.getElementById('nextBtn');
+    const excludeBtn = document.getElementById('excludeBtn');
+    const clearExclusionsBtn = document.getElementById('clearExclusionsBtn');
     const resultBox = document.getElementById('resultBox');
+
+    function loadExclusions() {
+      try {
+        const raw = localStorage.getItem(exclusionStorageKey);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return new Set(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveExclusions() {
+      localStorage.setItem(exclusionStorageKey, JSON.stringify([...excludedTerms]));
+    }
 
     function pick(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
@@ -608,9 +676,47 @@
       return shuffle(filtered).slice(0, count);
     }
 
+    function getPrimaryTerm(category, item) {
+      if (category === 'Ports') return item.service;
+      if (category === 'USB') return item.version;
+      if (category === 'WiFi') return item.standard;
+      if (category === 'Cables') return item.cable;
+      if (category === 'Wi-Fi Security') return item.term;
+      if (category === 'Interfaces') return item.item;
+      if (category === 'File Systems') return item.term;
+      if (category === 'Cloud') return item.term;
+      if (category === 'Security') return item.term;
+      if (category === 'Tools') return item.term;
+      if (category === 'Printers') return item.component + ' | ' + item.symptom;
+      return null;
+    }
+
+    function getFilteredItems(category) {
+      return data[category].filter(item => !excludedTerms.has(getPrimaryTerm(category, item)));
+    }
+
+    function availableCategories() {
+      const all = mode === 'All Categories' ? weightedCategories : [mode];
+      return [...new Set(all)].filter(category => getFilteredItems(category).length > 0);
+    }
+
     function buildQuestion() {
-      const category = mode === 'All Categories' ? pick(weightedCategories) : mode;
-      const item = pick(data[category]);
+      const candidates = availableCategories();
+      if (!candidates.length) {
+        return {
+          category: 'None',
+          question: 'All available terms in this mode are temporarily excluded. Clear exclusions to continue.',
+          correctAnswer: '',
+          options: []
+        };
+      }
+
+      const category = mode === 'All Categories'
+        ? pick(weightedCategories.filter(cat => candidates.includes(cat)))
+        : candidates[0];
+
+      const items = getFilteredItems(category);
+      const item = pick(items);
       const generated = categoryGenerators[category](item);
       const wrong = uniqueWrongAnswers(generated.pool, generated.answer, 3);
       const options = shuffle([generated.answer, ...wrong]);
@@ -618,7 +724,8 @@
         category,
         question: generated.question,
         correctAnswer: generated.answer,
-        options
+        options,
+        termKey: getPrimaryTerm(category, item)
       };
     }
 
@@ -647,8 +754,14 @@
       resultBox.innerHTML = '';
       submitBtn.disabled = true;
       nextBtn.disabled = true;
+      excludeBtn.disabled = currentQuestion.category === 'None' || !currentQuestion.termKey;
       locked = false;
       selectedAnswer = null;
+
+      if (!currentQuestion.options.length) {
+        answersEl.innerHTML = '';
+        return;
+      }
 
       const letters = ['A', 'B', 'C', 'D'];
       currentQuestion.options.forEach((opt, idx) => {
@@ -697,6 +810,19 @@
     });
 
     nextBtn.addEventListener('click', loadQuestion);
+
+    excludeBtn.addEventListener('click', () => {
+      if (!currentQuestion || !currentQuestion.termKey) return;
+      excludedTerms.add(currentQuestion.termKey);
+      saveExclusions();
+      loadQuestion();
+    });
+
+    clearExclusionsBtn.addEventListener('click', () => {
+      excludedTerms = new Set();
+      saveExclusions();
+      loadQuestion();
+    });
 
     renderChips();
     loadQuestion();
