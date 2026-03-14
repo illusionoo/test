@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A+ Memory Trainer - Rebuilt</title>
+  <style>
+    :root {
+      --bg: #08111f;
+      --panel: rgba(15, 23, 42, 0.95);
+      --panel-2: #13223b;
+      --panel-3: #0f1a2d;
+      --text: #e5eefc;
+      --muted: #99a9c6;
+      --border: #29405f;
+      --accent: #6ee7ff;
+      --accent-2: #60a5fa;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --shadow: 0 24px 80px rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,0.16), transparent 28%),
+        radial-gradient(circle at top right, rgba(110,231,255,0.12), transparent 24%),
+        linear-gradient(180deg, #020617 0%, #0a1120 100%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    h1 { margin: 0 0 8px; font-size: 32px; }
+    .sub { color: var(--muted); line-height: 1.6; margin-bottom: 18px; max-width: 88ch; }
+    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; align-items: start; }
+    .panel { background: rgba(9, 15, 29, 0.75); border: 1px solid var(--border); border-radius: 20px; padding: 16px; }
+    .panel h2 { margin: 0 0 12px; font-size: 18px; }
+    .helper { color: var(--muted); font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+
+    .chip-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--panel-3);
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: 0.15s ease;
+      font-size: 13px;
+      user-select: none;
+    }
+    .chip:hover { transform: translateY(-1px); background: #142642; }
+    .chip.active { background: linear-gradient(180deg, var(--accent), #67b8ff); color: #032139; border-color: transparent; font-weight: 700; }
+    .chip.small { font-size: 12px; padding: 7px 10px; }
+
+    .meta { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 12px; }
+    .stat { background: var(--panel-3); border: 1px solid var(--border); border-radius: 16px; padding: 12px; }
+    .stat-label { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .stat-value { font-weight: 700; line-height: 1.4; }
+
+    .preview-box { background: var(--panel-3); border: 1px dashed var(--border); border-radius: 16px; padding: 12px; margin-top: 10px; }
+    .preview-title { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .preview-text { font-size: 13px; line-height: 1.55; color: var(--text); }
+
+    .question-wrap { min-height: 500px; display: flex; flex-direction: column; }
+    .question-tag { display: inline-flex; align-self: flex-start; padding: 7px 10px; border-radius: 999px; background: rgba(96,165,250,0.18); color: #cde7ff; font-size: 12px; border: 1px solid rgba(96,165,250,0.25); margin-bottom: 14px; }
+    .question { font-size: 29px; line-height: 1.34; font-weight: 800; margin: 0 0 20px; }
+    .answers { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .option {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 15px;
+      cursor: pointer;
+      min-height: 82px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: 0.15s ease;
+    }
+    .option:hover { transform: translateY(-1px); background: #183156; }
+    .option.selected { border-color: #7dd3fc; background: #173866; }
+    .option.correct { border-color: rgba(34,197,94,0.9); background: rgba(34,197,94,0.14); }
+    .option.incorrect { border-color: rgba(239,68,68,0.9); background: rgba(239,68,68,0.14); }
+    .option.disabled { cursor: not-allowed; opacity: 0.96; }
+    .letter { width: 31px; height: 31px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.45); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; font-weight: 700; background: rgba(2,6,23,0.65); }
+    .option-text { line-height: 1.5; }
+
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+    .action {
+      border: 1px solid var(--border);
+      background: var(--panel-3);
+      color: var(--text);
+      padding: 11px 15px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: 0.15s ease;
+    }
+    .action:hover:not(:disabled) { transform: translateY(-1px); background: #142642; }
+    .action.primary { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #032139; border-color: transparent; }
+    .action:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .result { margin-top: 16px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border); display: none; line-height: 1.65; }
+    .result.good { display: block; border-color: rgba(34,197,94,0.8); background: rgba(34,197,94,0.12); }
+    .result.bad { display: block; border-color: rgba(239,68,68,0.8); background: rgba(239,68,68,0.12); }
+    .footer-note { margin-top: 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .question-wrap { min-height: auto; }
+    }
+    @media (max-width: 760px) {
+      .answers { grid-template-columns: 1fr; }
+      .question { font-size: 24px; }
+      .meta { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>A+ Memory Trainer</h1>
+      <div class="sub">
+        Rebuilt for broader edge-case coverage. Categories are multi-select, category sampling is even by default, and the quiz now mixes strong memorization mappings with fixed BEST/FIRST trap patterns. Exclusions stay local in your browser.
+      </div>
+
+      <div class="layout">
+        <aside class="panel">
+          <h2>Question Pools</h2>
+          <div class="helper">Pick any combination of categories. The quiz will sample evenly from the enabled pools instead of repeating a few weighted favorites.</div>
+          <div class="chip-grid" id="categoryBar"></div>
+          <div class="chip-grid">
+            <button class="action" id="selectAllBtn">Select All</button>
+            <button class="action" id="clearSelectionBtn">Clear Selection</button>
+            <button class="action" id="restoreDefaultsBtn">Restore Defaults</button>
+          </div>
+          <div class="preview-box">
+            <div class="preview-title">Enabled pool preview</div>
+            <div class="preview-text" id="selectedPreview">-</div>
+          </div>
+
+          <div class="meta">
+            <div class="stat">
+              <div class="stat-label">Enabled categories</div>
+              <div class="stat-value" id="enabledCount">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Excluded terms</div>
+              <div class="stat-value" id="excludedCount">0</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Current category</div>
+              <div class="stat-value" id="categoryLabel">-</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Question type</div>
+              <div class="stat-value" id="questionType">-</div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel question-wrap">
+          <div class="question-tag" id="poolLabel">Loading...</div>
+          <div class="question" id="questionText">Loading question...</div>
+          <div class="answers" id="answers"></div>
+          <div class="controls">
+            <button class="action primary" id="submitBtn" disabled>Submit</button>
+            <button class="action" id="nextBtn" disabled>Next Question</button>
+            <button class="action" id="excludeBtn" disabled>Temporarily Exclude This Term</button>
+            <button class="action" id="clearExclusionsBtn">Clear Exclusions</button>
+          </div>
+          <div class="result" id="resultBox"></div>
+          <div class="footer-note">
+            Strong mapping categories randomize safely from term/attribute libraries. BEST/FIRST stays fixed-question on purpose so it does not generate awkward pseudo-scenarios.
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const data = {"Ports": [{"service": "FTP", "port": "20/21", "purpose": "Transfers files between systems.", "group": "file transfer"}, {"service": "SSH", "port": "22", "purpose": "Provides secure remote terminal access.", "group": "remote access"}, {"service": "Telnet", "port": "23", "purpose": "Provides insecure remote terminal access.", "group": "remote access"}, {"service": "SMTP", "port": "25", "purpose": "Sends email between servers.", "group": "email"}, {"service": "DNS", "port": "53", "purpose": "Resolves names to IP addresses.", "group": "name service"}, {"service": "DHCP", "port": "67/68", "purpose": "Automatically leases IP configuration to clients.", "group": "addressing"}, {"service": "TFTP", "port": "69", "purpose": "Transfers files with a lightweight, no-authentication protocol.", "group": "file transfer"}, {"service": "HTTP", "port": "80", "purpose": "Carries standard web traffic.", "group": "web"}, {"service": "NTP", "port": "123", "purpose": "Synchronizes system clocks over a network.", "group": "management"}, {"service": "POP3", "port": "110", "purpose": "Downloads email from a mail server.", "group": "email"}, {"service": "NetBIOS", "port": "137-139", "purpose": "Supports older name, session, and file-sharing services on Windows networks.", "group": "windows services"}, {"service": "IMAP4", "port": "143", "purpose": "Accesses and manages email while keeping messages on the server.", "group": "email"}, {"service": "LDAP", "port": "389", "purpose": "Queries and manages directory services.", "group": "directory"}, {"service": "SMTPS", "port": "465", "purpose": "Sends email over an encrypted SMTP connection.", "group": "email secure"}, {"service": "HTTPS", "port": "443", "purpose": "Carries encrypted web traffic.", "group": "web secure"}, {"service": "SMB/CIFS", "port": "445", "purpose": "Provides Windows file and printer sharing.", "group": "windows services"}, {"service": "LDAPS", "port": "636", "purpose": "Queries directory services over an encrypted channel.", "group": "directory secure"}, {"service": "RDP", "port": "3389", "purpose": "Provides remote graphical desktop access.", "group": "remote access"}, {"service": "IMAPS", "port": "993", "purpose": "Accesses email securely while keeping messages on the server.", "group": "email secure"}, {"service": "POP3S", "port": "995", "purpose": "Downloads email securely from a mail server.", "group": "email secure"}, {"service": "FTPS", "port": "990", "purpose": "Transfers files over an encrypted FTP connection.", "group": "file transfer secure"}], "802.11 / Wi-Fi": [{"standard": "802.11a", "band": "5 GHz", "speed": "54 Mbps", "generation": "legacy", "feature": "Older 5 GHz Wi-Fi standard."}, {"standard": "802.11b", "band": "2.4 GHz", "speed": "11 Mbps", "generation": "legacy", "feature": "Early 2.4 GHz Wi-Fi standard."}, {"standard": "802.11g", "band": "2.4 GHz", "speed": "54 Mbps", "generation": "legacy", "feature": "2.4 GHz standard with 54 Mbps throughput."}, {"standard": "802.11n", "band": "2.4/5 GHz", "speed": "600 Mbps", "generation": "Wi-Fi 4", "feature": "Introduced MIMO and can use 2.4 or 5 GHz."}, {"standard": "802.11ac", "band": "5 GHz", "speed": "6.9 Gbps", "generation": "Wi-Fi 5", "feature": "5 GHz standard with MU-MIMO and wider channels."}, {"standard": "802.11ax", "band": "2.4/5 GHz", "speed": "9.6 Gbps", "generation": "Wi-Fi 6", "feature": "Improves efficiency with OFDMA and dense-device performance."}, {"standard": "802.11ax (6E)", "band": "6 GHz", "speed": "9.6 Gbps", "generation": "Wi-Fi 6E", "feature": "Extends Wi-Fi 6 into the 6 GHz band."}], "USB": [{"name": "USB 2.0", "speed": "480 Mbps", "feature": "High-speed USB; common for keyboards, mice, and basic peripherals.", "connector": "USB-A/USB-B/Mini/Micro"}, {"name": "USB 3.2 Gen 1", "speed": "5 Gbps", "feature": "Formerly USB 3.0; SuperSpeed USB.", "connector": "USB-A/USB-C/Micro-B"}, {"name": "USB 3.2 Gen 2", "speed": "10 Gbps", "feature": "SuperSpeed+ USB; often used for fast external storage.", "connector": "USB-A/USB-C"}, {"name": "USB 3.2 Gen 2x2", "speed": "20 Gbps", "feature": "Uses two 10 Gbps lanes, typically over USB-C.", "connector": "USB-C"}, {"name": "USB4", "speed": "40 Gbps", "feature": "Very high-speed USB with tunneling support and USB-C connector.", "connector": "USB-C"}, {"name": "USB-C", "speed": "varies", "feature": "Reversible connector that can carry data, power, and alternate modes such as DisplayPort.", "connector": "connector"}, {"name": "Lightning", "speed": "varies", "feature": "Apple connector used on many older iPhones and accessories.", "connector": "connector"}], "PoE": [{"standard": "802.3af", "nickname": "PoE", "power": "15.4 W", "use": "Powers devices such as basic IP phones and access points."}, {"standard": "802.3at", "nickname": "PoE+", "power": "25.5 W", "use": "Provides more power for devices such as advanced access points or PTZ cameras."}, {"standard": "802.3bt", "nickname": "PoE++", "power": "60-90 W", "use": "Provides higher power for devices such as lighting, kiosks, or high-end wireless gear."}], "IoT Protocols": [{"term": "Z-Wave", "band": "800-900 MHz", "use": "Low-power proprietary wireless protocol used heavily in home automation.", "family": "home automation"}, {"term": "Zigbee", "band": "2.4 GHz", "use": "Low-power mesh protocol used for smart-home and IoT devices.", "family": "home automation"}, {"term": "Bluetooth", "band": "2.4 GHz", "use": "Short-range wireless communication for peripherals and mobile accessories.", "family": "personal wireless"}, {"term": "BLE", "band": "2.4 GHz", "use": "Bluetooth Low Energy for low-power sensors and wearables.", "family": "personal wireless"}, {"term": "NFC", "band": "13.56 MHz", "use": "Very short-range communication for tap-to-pay and pairing.", "family": "very short range"}, {"term": "RFID", "band": "varies", "use": "Identifies and tracks tags using radio frequency.", "family": "identification"}, {"term": "LoRa", "band": "sub-GHz", "use": "Long-range, low-power communication for sensors over large areas.", "family": "long range"}], "Fiber & Network Interfaces": [{"term": "RJ11", "kind": "connector", "use": "Connector commonly used for telephone lines and DSL.", "medium": "copper twisted pair"}, {"term": "RJ45", "kind": "connector", "use": "Connector commonly used for Ethernet networking.", "medium": "copper twisted pair"}, {"term": "F-type", "kind": "connector", "use": "Connector commonly used with coaxial cable for cable internet and TV.", "medium": "coaxial"}, {"term": "LC", "kind": "fiber connector", "use": "Small-form-factor fiber connector common on modern equipment.", "medium": "fiber optic"}, {"term": "SC", "kind": "fiber connector", "use": "Push-pull square fiber connector common in networking and telecom.", "medium": "fiber optic"}, {"term": "ST", "kind": "fiber connector", "use": "Twist-lock fiber connector often seen in older installations.", "medium": "fiber optic"}, {"term": "MPO/MTP", "kind": "fiber connector", "use": "High-density multi-fiber connector often used in backbone links and data centers.", "medium": "fiber optic"}, {"term": "UTP", "kind": "cable type", "use": "Unshielded twisted-pair cable common for Ethernet runs.", "medium": "copper twisted pair"}, {"term": "STP", "kind": "cable type", "use": "Shielded twisted-pair cable used where extra EMI protection is needed.", "medium": "copper twisted pair"}, {"term": "Coaxial", "kind": "cable type", "use": "Cable with a central conductor used for cable modems, TV, and some surveillance systems.", "medium": "coaxial"}, {"term": "Single-mode fiber", "kind": "fiber type", "use": "Fiber designed for long-distance links using a small core.", "medium": "fiber optic"}, {"term": "Multimode fiber", "kind": "fiber type", "use": "Fiber designed for shorter-distance links using a larger core.", "medium": "fiber optic"}, {"term": "Punchdown block", "kind": "termination hardware", "use": "Termination point used to organize and connect voice or data cabling.", "medium": "copper twisted pair"}, {"term": "Keystone jack", "kind": "termination hardware", "use": "Modular jack inserted into wall plates or patch panels for network cabling.", "medium": "copper twisted pair"}, {"term": "Patch panel", "kind": "termination hardware", "use": "Rack-mounted panel used to terminate and organize many network cable runs.", "medium": "copper twisted pair"}, {"term": "Plenum cable", "kind": "cable rating", "use": "Fire-resistant cable jacket rated for use in air-handling spaces.", "medium": "copper/fiber"}], "Laser Printer Components": [{"term": "Drum", "use": "Receives the latent image and attracts toner before transfer to paper.", "symptom": "Often associated with ghosting, repeating defects, or image quality issues."}, {"term": "Fuser", "use": "Uses heat and pressure to permanently bond toner to the paper.", "symptom": "Often associated with smearing, toner rubbing off, or not fully fused output."}, {"term": "Toner cartridge", "use": "Supplies toner powder used to create the printed image.", "symptom": "Often associated with faded prints or low-toner issues."}, {"term": "Transfer roller", "use": "Applies a charge that moves toner from the drum onto the paper.", "symptom": "Often associated with poor transfer or very light images."}, {"term": "Pickup roller", "use": "Grabs and feeds paper from the tray into the printer path.", "symptom": "Often associated with paper jams or failure to pick paper."}, {"term": "Separation pad", "use": "Helps prevent multiple sheets from feeding at once.", "symptom": "Often associated with multi-page pickup problems."}, {"term": "Laser/scanner assembly", "use": "Writes the image onto the drum using a laser beam and mirrors.", "symptom": "Often associated with missing image areas or distorted imaging."}, {"term": "Duplexing assembly", "use": "Turns and re-feeds paper for double-sided printing.", "symptom": "Often associated with jams only during duplex printing."}, {"term": "Transfer belt", "use": "Moves toner from multiple cartridges onto paper in many color laser printers.", "symptom": "Often associated with color alignment and transfer problems."}, {"term": "Maintenance kit", "use": "Replacement kit that commonly includes rollers and fuser parts for scheduled upkeep.", "symptom": "Used for preventive maintenance after high page counts."}], "Acronym Functions": [{"term": "AP", "function": "Provides wireless clients a bridge to a wired network.", "domain": "networking"}, {"term": "ARP", "function": "Maps IPv4 addresses to MAC addresses on a local network.", "domain": "networking"}, {"term": "CPU", "function": "Executes instructions and performs general processing tasks.", "domain": "hardware"}, {"term": "DHCP", "function": "Automatically assigns IP settings to clients.", "domain": "networking"}, {"term": "DIMM", "function": "Desktop memory module form factor used for system RAM.", "domain": "hardware"}, {"term": "DNS", "function": "Translates hostnames into IP addresses.", "domain": "networking"}, {"term": "DSL", "function": "Provides internet service over telephone lines.", "domain": "networking"}, {"term": "eMMC", "function": "Integrated flash storage commonly used in lightweight devices.", "domain": "hardware"}, {"term": "EMI", "function": "Electrical interference that can disrupt signals and devices.", "domain": "hardware"}, {"term": "EULA", "function": "License agreement defining how software may be used.", "domain": "security"}, {"term": "FTP", "function": "Transfers files between hosts over a network.", "domain": "networking"}, {"term": "GPS", "function": "Provides location and navigation data via satellites.", "domain": "mobile"}, {"term": "GPU", "function": "Accelerates graphics rendering and parallel visual workloads.", "domain": "hardware"}, {"term": "GSM", "function": "Cellular standard used for mobile voice and data service.", "domain": "mobile"}, {"term": "GUI", "function": "Graphical interface used to interact visually with software.", "domain": "software"}, {"term": "HDD", "function": "Magnetic storage device with spinning platters.", "domain": "hardware"}, {"term": "HDMI", "function": "Digital video interface that can also carry audio.", "domain": "hardware"}, {"term": "HTTP", "function": "Protocol used to access standard web content.", "domain": "networking"}, {"term": "HTTPS", "function": "Encrypted protocol used to access web content securely.", "domain": "networking"}, {"term": "IaaS", "function": "Cloud model that provides virtualized compute, storage, and networking resources.", "domain": "cloud"}, {"term": "ICMP", "function": "Used for network diagnostics and control messages such as ping.", "domain": "networking"}, {"term": "IMAP", "function": "Email protocol that keeps messages stored on the server.", "domain": "networking"}, {"term": "IPSec", "function": "Secures IP traffic, often for VPN connections.", "domain": "security"}, {"term": "IPS", "function": "Detects and can actively block malicious network traffic.", "domain": "security"}, {"term": "IR", "function": "Uses infrared light for short-range wireless control or transfer.", "domain": "mobile"}, {"term": "ISP", "function": "Company that provides internet access service.", "domain": "networking"}, {"term": "KVM", "function": "Lets one keyboard, video display, and mouse control multiple computers.", "domain": "hardware"}, {"term": "LAN", "function": "Local network covering a limited geographic area.", "domain": "networking"}, {"term": "LDAP", "function": "Directory protocol used to query and manage identities and resources.", "domain": "networking"}, {"term": "LCD", "function": "Display technology using liquid crystals and a backlight.", "domain": "hardware"}, {"term": "LED", "function": "Light-emitting diode used in displays and indicators.", "domain": "hardware"}, {"term": "MAC", "function": "Hardware address used to identify a network interface on a LAN.", "domain": "networking"}, {"term": "MDM", "function": "Centralized management platform for mobile devices.", "domain": "mobile"}, {"term": "MFA", "function": "Requires multiple proof factors before granting access.", "domain": "security"}, {"term": "MFD", "function": "Multifunction printer device that prints, scans, copies, and often faxes.", "domain": "printing"}, {"term": "MIMO", "function": "Uses multiple antennas to improve wireless throughput and reliability.", "domain": "networking"}, {"term": "MMC", "function": "Flash memory card format used in some portable devices.", "domain": "hardware"}, {"term": "MX", "function": "DNS record that directs email to the correct mail server.", "domain": "networking"}, {"term": "NDA", "function": "Agreement used to protect confidential information from disclosure.", "domain": "business"}, {"term": "NFC", "function": "Short-range wireless technology used for tap-to-pay and quick pairing.", "domain": "mobile"}, {"term": "NIC", "function": "Network adapter that connects a device to a network.", "domain": "hardware"}, {"term": "NTP", "function": "Protocol used to synchronize clocks across devices.", "domain": "networking"}, {"term": "NVMe", "function": "High-speed storage access method optimized for flash over PCIe.", "domain": "hardware"}, {"term": "OLED", "function": "Display technology with self-lit pixels and strong contrast.", "domain": "hardware"}, {"term": "ONT", "function": "Device that terminates a fiber line for customer internet service.", "domain": "networking"}, {"term": "OTP", "function": "Single-use code used as an authentication factor.", "domain": "security"}, {"term": "PaaS", "function": "Cloud model that provides a platform for app development and deployment.", "domain": "cloud"}, {"term": "PAN", "function": "Very small personal-area network around a user.", "domain": "networking"}, {"term": "PCIe", "function": "High-speed expansion bus used for GPUs, SSDs, and add-in cards.", "domain": "hardware"}, {"term": "PIN", "function": "Numeric code used to verify identity or unlock access.", "domain": "security"}, {"term": "PoE", "function": "Sends electrical power over Ethernet cabling to compatible devices.", "domain": "networking"}, {"term": "POP3", "function": "Email protocol that typically downloads messages locally.", "domain": "networking"}, {"term": "POST", "function": "Startup self-check performed when a computer powers on.", "domain": "hardware"}, {"term": "RAID", "function": "Combines drives for redundancy, performance, or both.", "domain": "hardware"}, {"term": "RAM", "function": "Temporary working memory used by the system while running tasks.", "domain": "hardware"}, {"term": "RDP", "function": "Remote desktop protocol for graphical access to another computer.", "domain": "networking"}, {"term": "RFID", "function": "Radio technology used to identify and track tagged items.", "domain": "mobile"}, {"term": "RJ11", "function": "Telephone-style connector used with phone and DSL lines.", "domain": "hardware"}, {"term": "RJ45", "function": "Ethernet connector used with network cabling.", "domain": "hardware"}, {"term": "SaaS", "function": "Cloud model that delivers complete applications over the internet.", "domain": "cloud"}, {"term": "SAN", "function": "Dedicated network that provides block-level storage to servers.", "domain": "networking"}, {"term": "SAS", "function": "Drive/storage interface commonly used in servers and enterprise storage.", "domain": "hardware"}, {"term": "SATA", "function": "Common storage interface used for hard drives and SSDs.", "domain": "hardware"}, {"term": "SCADA", "function": "Industrial control system used to monitor and manage physical processes.", "domain": "security"}, {"term": "SCSI", "function": "Older storage interface standard for drives and peripherals.", "domain": "hardware"}, {"term": "SIM", "function": "Card or module that identifies a mobile subscriber on a cellular network.", "domain": "mobile"}, {"term": "SLA", "function": "Service agreement that defines expected support or performance levels.", "domain": "business"}, {"term": "SMB", "function": "Protocol used for network file and printer sharing, especially on Windows.", "domain": "networking"}, {"term": "SMTP", "function": "Protocol used to send email.", "domain": "networking"}, {"term": "SODIMM", "function": "Small memory module form factor used in laptops.", "domain": "hardware"}, {"term": "SOHO", "function": "Describes a small office or home office environment.", "domain": "business"}, {"term": "SPF", "function": "Email validation mechanism that checks whether sending hosts are authorized.", "domain": "security"}, {"term": "SQL", "function": "Language used to query and manage relational databases.", "domain": "software"}, {"term": "SSD", "function": "Solid-state storage device with no moving parts.", "domain": "hardware"}, {"term": "SSH", "function": "Secure remote shell for command-line access.", "domain": "networking"}, {"term": "SSID", "function": "The broadcast name of a wireless network.", "domain": "networking"}, {"term": "ST", "function": "Fiber connector with a twist-lock design.", "domain": "hardware"}, {"term": "TCP", "function": "Connection-oriented transport protocol focused on reliable delivery.", "domain": "networking"}, {"term": "TKIP", "function": "Legacy wireless encryption improvement used with early WPA.", "domain": "security"}, {"term": "TPM", "function": "Secure hardware module for storing keys and supporting platform trust features.", "domain": "security"}, {"term": "UDP", "function": "Connectionless transport protocol focused on speed over guaranteed delivery.", "domain": "networking"}, {"term": "UEFI", "function": "Modern firmware interface used to initialize hardware and boot systems.", "domain": "hardware"}, {"term": "UPnP", "function": "Lets devices automatically discover and request network services.", "domain": "networking"}, {"term": "UPS", "function": "Provides temporary battery-backed power during outages.", "domain": "hardware"}, {"term": "USB", "function": "Universal connection standard for data, peripherals, and power.", "domain": "hardware"}, {"term": "VDI", "function": "Delivers desktops virtually from centralized infrastructure.", "domain": "cloud"}, {"term": "VGA", "function": "Legacy analog video interface.", "domain": "hardware"}, {"term": "VLAN", "function": "Logically separates network segments on shared switching hardware.", "domain": "networking"}, {"term": "VNC", "function": "Remote-control technology for graphical desktop access.", "domain": "networking"}, {"term": "VoIP", "function": "Carries voice calls over IP networks.", "domain": "networking"}, {"term": "VPN", "function": "Creates an encrypted tunnel between networks or remote endpoints.", "domain": "security"}, {"term": "VRAM", "function": "Dedicated memory used by graphics hardware.", "domain": "hardware"}, {"term": "WAN", "function": "Wide-area network spanning large geographic areas.", "domain": "networking"}, {"term": "WISP", "function": "Internet service provider that delivers service wirelessly.", "domain": "networking"}, {"term": "WLAN", "function": "Wireless local area network.", "domain": "networking"}, {"term": "WPA", "function": "Wireless security standard for protecting Wi-Fi access.", "domain": "security"}, {"term": "WWAN", "function": "Cellular-based wide-area wireless network connection.", "domain": "mobile"}, {"term": "XDR", "function": "Extended detection and response platform that correlates security telemetry.", "domain": "security"}, {"term": "XFS", "function": "High-performance file system often associated with Linux systems.", "domain": "software"}], "BEST / FIRST": [{"q": "A user says a monitor is blank right after a cable move. What should you check FIRST?", "a": "Check the most obvious physical connection or power issue before assuming a hardware failure.", "d": ["Replace the monitor immediately", "Reimage the operating system", "Order a new graphics card"]}, {"q": "A user cannot print to one shared printer, but can print to another. What should you check FIRST?", "a": "Verify the user selected the correct printer queue and that the intended queue is online.", "d": ["Replace the printer's pickup rollers", "Install a different operating system", "Assume the print job file is corrupt"]}, {"q": "A shared USB printer must temporarily serve many employees and Wi-Fi is available. What BEST fits enterprise-style practice?", "a": "Use a dedicated wireless print server rather than depending on one employee's computer to stay on.", "d": ["Share it only from a manager's PC and rely on that PC full-time", "Wait two weeks with no workaround", "Move twelve employees to one desk to print locally"]}, {"q": "A question asks for the BEST solution in a business setting. Which choice usually wins?", "a": "The solution that is dedicated, reliable, and scalable usually beats the cheapest workaround.", "d": ["The choice with the fewest words always wins", "The newest technology always wins", "The answer that changes the most settings always wins"]}, {"q": "A troubleshooting question asks for the FIRST action. What pattern is usually safest?", "a": "Start with the simplest verification: user action, configuration, power, or physical connection.", "d": ["Replace major hardware first", "Escalate immediately before checking anything obvious", "Format the device before collecting facts"]}, {"q": "In A+ printer scenarios, a job is stuck in the queue for several users. What FIRST-style action is commonly favored?", "a": "Check the print queue or print spooler before assuming the printer hardware is defective.", "d": ["Replace the drum unit immediately", "Buy a second printer first", "Swap every toner cartridge"]}, {"q": "A BEST answer asks how to connect many users to a resource. Which option is usually weaker?", "a": "A solution that depends on one ordinary user's workstation is usually weaker than a dedicated shared device.", "d": ["A centralized service", "A dedicated network appliance", "A properly shared network service"]}, {"q": "When two answers both seem plausible, what often separates the better FIRST answer from the runner-up?", "a": "The better FIRST answer usually verifies an assumption before running a broader test.", "d": ["The longer answer is always right", "The most expensive action is always right", "The answer with the most acronyms is always right"]}, {"q": "A laptop cannot join Wi-Fi after traveling. What should you check FIRST?", "a": "Verify wireless is enabled and basic network settings are correct before deeper troubleshooting.", "d": ["Replace the access point", "Rebuild the entire network", "Assume the ISP is down"]}, {"q": "A user reports no internet after moving desks. What FIRST action fits A+ logic best?", "a": "Check link lights, cable seating, and whether the obvious network path is connected.", "d": ["Replace the router firmware", "Buy a new laptop", "Reset every password on the domain"]}]};
+    const defaultEnabled = ["Ports", "802.11 / Wi-Fi", "USB", "PoE", "IoT Protocols", "Fiber & Network Interfaces", "Laser Printer Components", "Acronym Functions", "BEST / FIRST"];
+    const exclusionStorageKey = 'a_plus_memory_trainer_exclusions_v2';
+    const enabledStorageKey = 'a_plus_memory_trainer_enabled_v2';
+
+    const categoryBar = document.getElementById('categoryBar');
+    const selectedPreview = document.getElementById('selectedPreview');
+    const enabledCount = document.getElementById('enabledCount');
+    const excludedCount = document.getElementById('excludedCount');
+    const categoryLabel = document.getElementById('categoryLabel');
+    const questionType = document.getElementById('questionType');
+    const poolLabel = document.getElementById('poolLabel');
+    const questionText = document.getElementById('questionText');
+    const answersEl = document.getElementById('answers');
+    const resultBox = document.getElementById('resultBox');
+    const submitBtn = document.getElementById('submitBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const excludeBtn = document.getElementById('excludeBtn');
+    const clearExclusionsBtn = document.getElementById('clearExclusionsBtn');
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const restoreDefaultsBtn = document.getElementById('restoreDefaultsBtn');
+
+    let enabledCategories = new Set(loadEnabledCategories());
+    let excludedTerms = new Set(loadExcludedTerms());
+    let currentQuestion = null;
+    let selectedIndex = null;
+
+    function loadExcludedTerms() {
+      try {
+        const raw = localStorage.getItem(exclusionStorageKey);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveExcludedTerms() {
+      localStorage.setItem(exclusionStorageKey, JSON.stringify([...excludedTerms]));
+      excludedCount.textContent = excludedTerms.size;
+    }
+
+    function loadEnabledCategories() {
+      try {
+        const raw = localStorage.getItem(enabledStorageKey);
+        const parsed = raw ? JSON.parse(raw) : defaultEnabled;
+        return parsed.filter(name => Object.prototype.hasOwnProperty.call(data, name));
+      } catch {
+        return [...defaultEnabled];
+      }
+    }
+
+    function saveEnabledCategories() {
+      localStorage.setItem(enabledStorageKey, JSON.stringify([...enabledCategories]));
+    }
+
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function unique(arr) {
+      return [...new Set(arr.filter(Boolean))];
+    }
+
+    function clip(text, max = 140) {
+      return text.length <= max ? text : text.slice(0, max - 1) + '…';
+    }
+
+    function renderCategoryBar() {
+      categoryBar.innerHTML = '';
+      Object.keys(data).forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = 'chip';
+        if (enabledCategories.has(cat)) btn.classList.add('active');
+        btn.textContent = cat;
+        btn.addEventListener('click', () => {
+          if (enabledCategories.has(cat)) enabledCategories.delete(cat);
+          else enabledCategories.add(cat);
+          if (enabledCategories.size === 0) enabledCategories.add(cat);
+          saveEnabledCategories();
+          renderCategoryBar();
+          renderSelectionMeta();
+          newQuestion();
+        });
+        categoryBar.appendChild(btn);
+      });
+    }
+
+    function renderSelectionMeta() {
+      const names = [...enabledCategories];
+      enabledCount.textContent = names.length;
+      selectedPreview.textContent = names.length ? names.join(' • ') : '-';
+      excludedCount.textContent = excludedTerms.size;
+    }
+
+    function getFilteredItems(category) {
+      return data[category].filter(item => {
+        if (category === 'BEST / FIRST') return true;
+        const key = item.term || item.service || item.standard || item.name;
+        return key ? !excludedTerms.has(key) : true;
+      });
+    }
+
+    function getEnabledCategoriesWithItems() {
+      return [...enabledCategories].filter(cat => getFilteredItems(cat).length > 0);
+    }
+
+    function sampleOtherValues(items, accessor, answer, count = 3) {
+      const pool = unique(items.map(accessor).filter(v => v && v !== answer));
+      return shuffle(pool).slice(0, count);
+    }
+
+    function buildQuestion(category, item) {
+      switch (category) {
+        case 'Ports': {
+          const style = pick(['service->port', 'port->service', 'purpose->service']);
+          if (style === 'service->port') {
+            return {
+              type: 'Mapped - service to port',
+              term: item.service,
+              question: `Which port is most closely associated with ${item.service}?`,
+              answer: item.port,
+              options: shuffle([item.port, ...sampleOtherValues(data[category], x => x.port, item.port)]),
+              explanation: `${item.service} uses port ${item.port}. ${item.purpose}`
+            };
+          }
+          if (style === 'port->service') {
+            return {
+              type: 'Mapped - port to service',
+              term: item.service,
+              question: `Which service is most closely associated with port ${item.port}?`,
+              answer: item.service,
+              options: shuffle([item.service, ...sampleOtherValues(data[category], x => x.service, item.service)]),
+              explanation: `Port ${item.port} maps to ${item.service}. ${item.purpose}`
+            };
+          }
+          return {
+            type: 'Mapped - function to service',
+            term: item.service,
+            question: `Which service best matches this role: “${item.purpose}”`,
+            answer: item.service,
+            options: shuffle([item.service, ...sampleOtherValues(data[category], x => x.service, item.service)]),
+            explanation: `${item.service} is the best match here and commonly uses port ${item.port}.`
+          };
+        }
+        case '802.11 / Wi-Fi': {
+          const style = pick(['standard->band', 'generation->standard', 'feature->standard']);
+          if (style === 'standard->band') {
+            return {
+              type: 'Mapped - Wi-Fi band',
+              term: item.standard,
+              question: `Which band is most associated with ${item.standard}?`,
+              answer: item.band,
+              options: shuffle([item.band, ...sampleOtherValues(data[category], x => x.band, item.band)]),
+              explanation: `${item.standard} is associated with ${item.band}. ${item.feature}`
+            };
+          }
+          if (style === 'generation->standard') {
+            return {
+              type: 'Mapped - Wi-Fi generation',
+              term: item.standard,
+              question: `Which standard is commonly known as ${item.generation}?`,
+              answer: item.standard,
+              options: shuffle([item.standard, ...sampleOtherValues(data[category], x => x.standard, item.standard)]),
+              explanation: `${item.generation} corresponds to ${item.standard}.`
+            };
+          }
+          return {
+            type: 'Mapped - feature to standard',
+            term: item.standard,
+            question: `Which standard best matches this description: “${item.feature}”`,
+            answer: item.standard,
+            options: shuffle([item.standard, ...sampleOtherValues(data[category], x => x.standard, item.standard)]),
+            explanation: `${item.standard} is the match. Typical band: ${item.band}. Approx throughput cue: ${item.speed}.`
+          };
+        }
+        case 'USB': {
+          const style = pick(['version->speed', 'feature->term']);
+          if (style === 'version->speed') {
+            return {
+              type: 'Mapped - USB speed',
+              term: item.name,
+              question: `What speed is most associated with ${item.name}?`,
+              answer: item.speed,
+              options: shuffle([item.speed, ...sampleOtherValues(data[category], x => x.speed, item.speed)]),
+              explanation: `${item.name} is commonly tied to ${item.speed}. ${item.feature}`
+            };
+          }
+          return {
+            type: 'Mapped - USB feature',
+            term: item.name,
+            question: `Which USB term best matches this description: “${item.feature}”`,
+            answer: item.name,
+            options: shuffle([item.name, ...sampleOtherValues(data[category], x => x.name, item.name)]),
+            explanation: `${item.name} is the correct match.`
+          };
+        }
+        case 'PoE': {
+          const style = pick(['standard->power', 'power->standard', 'nickname->standard']);
+          if (style === 'standard->power') {
+            return {
+              type: 'Mapped - PoE wattage',
+              term: item.standard,
+              question: `How much power is most associated with ${item.standard}?`,
+              answer: item.power,
+              options: shuffle([item.power, ...sampleOtherValues(data[category], x => x.power, item.power)]),
+              explanation: `${item.standard} (${item.nickname}) provides about ${item.power}.`
+            };
+          }
+          if (style === 'power->standard') {
+            return {
+              type: 'Mapped - PoE standard',
+              term: item.standard,
+              question: `Which PoE standard is most associated with ${item.power}?`,
+              answer: item.standard,
+              options: shuffle([item.standard, ...sampleOtherValues(data[category], x => x.standard, item.standard)]),
+              explanation: `${item.standard} matches that wattage and is also known as ${item.nickname}.`
+            };
+          }
+          return {
+            type: 'Mapped - PoE nickname',
+            term: item.standard,
+            question: `Which standard is commonly called ${item.nickname}?`,
+            answer: item.standard,
+            options: shuffle([item.standard, ...sampleOtherValues(data[category], x => x.standard, item.standard)]),
+            explanation: `${item.nickname} refers to ${item.standard}.`
+          };
+        }
+        case 'IoT Protocols': {
+          const style = pick(['term->band', 'use->term']);
+          if (style === 'term->band') {
+            return {
+              type: 'Mapped - protocol band',
+              term: item.term,
+              question: `Which band is most associated with ${item.term}?`,
+              answer: item.band,
+              options: shuffle([item.band, ...sampleOtherValues(data[category], x => x.band, item.band)]),
+              explanation: `${item.term} is associated with ${item.band}. ${item.use}`
+            };
+          }
+          return {
+            type: 'Mapped - protocol function',
+            term: item.term,
+            question: `Which protocol best matches this role: “${item.use}”`,
+            answer: item.term,
+            options: shuffle([item.term, ...sampleOtherValues(data[category], x => x.term, item.term)]),
+            explanation: `${item.term} is the best match.`
+          };
+        }
+        case 'Fiber & Network Interfaces': {
+          const style = pick(['term->use', 'use->term', 'term->medium']);
+          if (style === 'term->use') {
+            return {
+              type: 'Mapped - connector use',
+              term: item.term,
+              question: `What is the best match for ${item.term}?`,
+              answer: item.use,
+              options: shuffle([item.use, ...sampleOtherValues(data[category], x => x.use, item.use)]),
+              explanation: `${item.term}: ${item.use} Medium cue: ${item.medium}.`
+            };
+          }
+          if (style === 'use->term') {
+            return {
+              type: 'Mapped - description to term',
+              term: item.term,
+              question: `Which term best matches this description: “${item.use}”`,
+              answer: item.term,
+              options: shuffle([item.term, ...sampleOtherValues(data[category], x => x.term, item.term)]),
+              explanation: `${item.term} is the best match.`
+            };
+          }
+          return {
+            type: 'Mapped - medium',
+            term: item.term,
+            question: `Which medium is most associated with ${item.term}?`,
+            answer: item.medium,
+            options: shuffle([item.medium, ...sampleOtherValues(data[category], x => x.medium, item.medium)]),
+            explanation: `${item.term} is most closely tied to ${item.medium}.`
+          };
+        }
+        case 'Laser Printer Components': {
+          const style = pick(['term->use', 'use->term', 'symptom->term']);
+          if (style === 'term->use') {
+            return {
+              type: 'Mapped - printer component role',
+              term: item.term,
+              question: `What is the main role of the ${item.term} in a laser printer?`,
+              answer: item.use,
+              options: shuffle([item.use, ...sampleOtherValues(data[category], x => x.use, item.use)]),
+              explanation: `${item.term}: ${item.use} ${item.symptom}`
+            };
+          }
+          if (style === 'use->term') {
+            return {
+              type: 'Mapped - role to printer component',
+              term: item.term,
+              question: `Which laser printer component best matches this role: “${item.use}”`,
+              answer: item.term,
+              options: shuffle([item.term, ...sampleOtherValues(data[category], x => x.term, item.term)]),
+              explanation: `${item.term} is the best match. ${item.symptom}`
+            };
+          }
+          return {
+            type: 'Mapped - symptom cue',
+            term: item.term,
+            question: `Which component is most associated with this clue: “${item.symptom}”`,
+            answer: item.term,
+            options: shuffle([item.term, ...sampleOtherValues(data[category], x => x.term, item.term)]),
+            explanation: `${item.term} is the strongest match for that clue.`
+          };
+        }
+        case 'Acronym Functions': {
+          const sameDomain = data[category].filter(x => x.domain === item.domain);
+          const distractors = sameDomain.length >= 4 ? sampleOtherValues(sameDomain, x => x.function, item.function) : sampleOtherValues(data[category], x => x.function, item.function);
+          return {
+            type: 'Mapped - acronym to function',
+            term: item.term,
+            question: `What is the best functional description of ${item.term}?`,
+            answer: item.function,
+            options: shuffle([item.function, ...distractors.slice(0,3)]),
+            explanation: `${item.term}: ${item.function}`
+          };
+        }
+        case 'BEST / FIRST': {
+          return {
+            type: 'Fixed trap / exam logic',
+            term: 'BEST / FIRST',
+            question: item.q,
+            answer: item.a,
+            options: shuffle([item.a, ...item.d]),
+            explanation: item.a
+          };
+        }
+        default:
+          throw new Error('Unknown category: ' + category);
+      }
+    }
+
+    function getQuestion() {
+      const enabled = getEnabledCategoriesWithItems();
+      if (enabled.length === 0) return null;
+      const category = pick(enabled);
+      const items = getFilteredItems(category);
+      const item = pick(items);
+      const built = buildQuestion(category, item);
+      if (!built || unique(built.options).length < 4 || !built.options.includes(built.answer)) return getQuestion();
+      built.category = category;
+      return built;
+    }
+
+    function renderQuestion() {
+      if (!currentQuestion) {
+        questionText.textContent = 'No questions available. Adjust your enabled categories or clear exclusions.';
+        poolLabel.textContent = 'No pool available';
+        categoryLabel.textContent = '-';
+        questionType.textContent = '-';
+        answersEl.innerHTML = '';
+        submitBtn.disabled = true;
+        nextBtn.disabled = true;
+        excludeBtn.disabled = true;
+        resultBox.className = 'result';
+        resultBox.style.display = 'none';
+        return;
+      }
+
+      poolLabel.textContent = currentQuestion.category;
+      categoryLabel.textContent = currentQuestion.category;
+      questionType.textContent = currentQuestion.type;
+      questionText.textContent = currentQuestion.question;
+      answersEl.innerHTML = '';
+      selectedIndex = null;
+      submitBtn.disabled = true;
+      nextBtn.disabled = true;
+      excludeBtn.disabled = !currentQuestion.term || currentQuestion.category === 'BEST / FIRST';
+      resultBox.className = 'result';
+      resultBox.style.display = 'none';
+      resultBox.innerHTML = '';
+
+      currentQuestion.options.forEach((optionText, index) => {
+        const option = document.createElement('button');
+        option.className = 'option';
+        option.type = 'button';
+        option.innerHTML = `<span class="letter">${String.fromCharCode(65 + index)}</span><span class="option-text">${optionText}</span>`;
+        option.addEventListener('click', () => {
+          if (!nextBtn.disabled) return;
+          selectedIndex = index;
+          [...answersEl.children].forEach(el => el.classList.remove('selected'));
+          option.classList.add('selected');
+          submitBtn.disabled = false;
+        });
+        answersEl.appendChild(option);
+      });
+    }
+
+    function submitAnswer() {
+      if (selectedIndex === null || !currentQuestion) return;
+      const options = [...answersEl.children];
+      options.forEach((el, idx) => {
+        el.classList.add('disabled');
+        if (currentQuestion.options[idx] === currentQuestion.answer) el.classList.add('correct');
+      });
+      const chosen = currentQuestion.options[selectedIndex];
+      const correct = chosen === currentQuestion.answer;
+      if (!correct) options[selectedIndex].classList.add('incorrect');
+
+      resultBox.className = `result ${correct ? 'good' : 'bad'}`;
+      resultBox.style.display = 'block';
+      resultBox.innerHTML = `<strong>${correct ? 'Correct' : 'Not quite'}</strong><br>${currentQuestion.explanation}`;
+      submitBtn.disabled = true;
+      nextBtn.disabled = false;
+    }
+
+    function newQuestion() {
+      currentQuestion = getQuestion();
+      renderQuestion();
+    }
+
+    submitBtn.addEventListener('click', submitAnswer);
+    nextBtn.addEventListener('click', () => newQuestion());
+    clearExclusionsBtn.addEventListener('click', () => {
+      excludedTerms = new Set();
+      saveExcludedTerms();
+      renderSelectionMeta();
+      newQuestion();
+    });
+    excludeBtn.addEventListener('click', () => {
+      if (!currentQuestion || !currentQuestion.term || currentQuestion.category === 'BEST / FIRST') return;
+      excludedTerms.add(currentQuestion.term);
+      saveExcludedTerms();
+      renderSelectionMeta();
+      newQuestion();
+    });
+
+    selectAllBtn.addEventListener('click', () => {
+      enabledCategories = new Set(Object.keys(data));
+      saveEnabledCategories();
+      renderCategoryBar();
+      renderSelectionMeta();
+      newQuestion();
+    });
+    clearSelectionBtn.addEventListener('click', () => {
+      enabledCategories = new Set([Object.keys(data)[0]]);
+      saveEnabledCategories();
+      renderCategoryBar();
+      renderSelectionMeta();
+      newQuestion();
+    });
+    restoreDefaultsBtn.addEventListener('click', () => {
+      enabledCategories = new Set(defaultEnabled);
+      saveEnabledCategories();
+      renderCategoryBar();
+      renderSelectionMeta();
+      newQuestion();
+    });
+
+    renderCategoryBar();
+    renderSelectionMeta();
+    newQuestion();
+  </script>
+</body>
+</html>
